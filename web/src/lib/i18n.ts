@@ -8,6 +8,10 @@ const ar: Record<string, string> = {
   "nav.allTariffs": "جميع التعريفات",
   "nav.chapter": "باب",
 
+  // Sidebar
+  "sidebar.officialLabel": "الموقع الرسمي",
+  "sidebar.officialName": "مصلحة الجمارك المصرية",
+
   // Search
   "search.placeholder": "ابحث برمز النظام المنسق أو كلمة…",
 
@@ -34,6 +38,8 @@ const ar: Record<string, string> = {
   "results.of": "من",
   "results.codes": "رمز",
   "results.chapters": "باب",
+  "stats.taxEntries": "ضريبة",
+  "stats.instructions": "تعليمة",
 
   // Detail dialog
   "detail.dutiesTaxes": "الرسوم والضرائب",
@@ -42,6 +48,29 @@ const ar: Record<string, string> = {
   "detail.tradeAgreements": "الاتفاقيات التجارية",
   "detail.regulations": "التعليمات الرقابية",
   "detail.viewOnGov": "عرض على موقع الجمارك",
+  "detail.example": "مثال",
+  "detail.estimatedTotal": "الإجمالي التقديري",
+  "detail.disclaimer": "المبالغ تقديرية بناءً على قيمة جمركية — للاستخدام التوضيحي فقط",
+  "detail.dialogDescription": "تفاصيل البند الجمركي",
+  "detail.cascadingNote": "محسوبة على القيمة + الرسوم الجمركية",
+
+  // Pagination
+  "pagination.label": "التنقل بين الصفحات",
+  "pagination.prev": "الصفحة السابقة",
+  "pagination.next": "الصفحة التالية",
+  "pagination.page": "صفحة",
+
+  // Filter
+  "filter.remove": "إزالة:",
+  "filter.clearAll": "مسح التصفية",
+  "filter.clearSearch": "مسح البحث",
+
+  // Disclaimer
+  "disclaimer.header": "غير رسمي — للاستخدام الاسترشادي فقط",
+  "disclaimer.lastSync": "آخر تحديث",
+
+  // Accessibility
+  "a11y.skipToContent": "تخطي إلى المحتوى الرئيسي",
 
   // Sidebar sections
   "section.animalsAnimalProducts": "حيوانات ومنتجات حيوانية",
@@ -212,4 +241,10 @@ export function fmt(n: number): string {
 /** Format currency (EGP) for the example bill */
 export function fmtEGP(n: number): string {
   return fmt(n) + " ج.م"
+}
+
+/** Format a date string (YYYY-MM-DD) as Arabic textual date (١٣ أبريل ٢٠٢٦) */
+export function fmtDateAr(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00")
+  return d.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" })
 }

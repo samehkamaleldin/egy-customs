@@ -46,16 +46,23 @@ def translate_rate(raw: str) -> str:
     return raw
 
 
+def _split_rate_note(rate: str) -> tuple[str, str | None]:
+    """Split '14% (من القيمة + ر.ض.جمركية)' into ('14%', 'من القيمة + ر.ض.جمركية')."""
+    m = re.match(r"^(.*?)\s*\((.+)\)\s*$", rate)
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return rate, None
+
+
 def parse_tax_entry(entry: str) -> dict | None:
     """Parse a single tax string like 'ضريبة الوارد :  5%' into structured data."""
     entry = entry.strip()
     if not entry:
         return None
 
-    # Check if it's an FTA header (no colon)
     if ":" not in entry:
         en = FTA_LABELS.get(entry, entry)
-        return {"type": "agreement", "label_ar": entry, "label_en": en, "rate": None}
+        return {"type": "agreement", "label_ar": entry, "label_en": en, "rate": None, "rate_note": None}
 
     parts = entry.split(":", 1)
     label_ar = parts[0].strip()
@@ -63,13 +70,22 @@ def parse_tax_entry(entry: str) -> dict | None:
 
     label_en = TAX_LABELS.get(label_ar, label_ar)
     rate = translate_rate(rate_raw)
+    rate, rate_note = _split_rate_note(rate)
 
-    return {"type": "tax", "label_ar": label_ar, "label_en": label_en, "rate": rate}
+    return {"type": "tax", "label_ar": label_ar, "label_en": label_en, "rate": rate, "rate_note": rate_note}
 
 
 def extract_chapter(code: str) -> str:
     """Extract chapter number from HS code like '01/02/03/04/05' → '01'."""
     return code.split("/")[0] if "/" in code else code[:2]
+
+
+def extract_numeric_rate(rate_str: str | None) -> float | None:
+    """Extract numeric rate from rate string. '5%' -> 5.0, '0%' -> 0.0, None -> None."""
+    if not rate_str:
+        return None
+    m = re.search(r"([\d.]+)", rate_str)
+    return float(m.group(1)) if m else None
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +98,9 @@ CREATE TABLE IF NOT EXISTS tariffs (
     code TEXT NOT NULL UNIQUE,
     chapter TEXT NOT NULL,
     description_ar TEXT NOT NULL,
-    short_description_ar TEXT NOT NULL
+    short_description_ar TEXT NOT NULL,
+    import_duty_numeric REAL,
+    vat_numeric REAL
 );
 
 CREATE TABLE IF NOT EXISTS taxes (
@@ -92,6 +110,8 @@ CREATE TABLE IF NOT EXISTS taxes (
     label_ar TEXT NOT NULL,
     label_en TEXT NOT NULL,
     rate TEXT,
+    rate_note TEXT,
+    rate_numeric REAL,
     sort_order INTEGER NOT NULL DEFAULT 0
 );
 
@@ -104,8 +124,9 @@ CREATE TABLE IF NOT EXISTS instructions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tariffs_chapter ON tariffs(chapter);
-CREATE INDEX IF NOT EXISTS idx_tariffs_code ON tariffs(code);
 CREATE INDEX IF NOT EXISTS idx_taxes_tariff ON taxes(tariff_code);
+CREATE INDEX IF NOT EXISTS idx_taxes_type_code ON taxes(type, tariff_code);
+CREATE INDEX IF NOT EXISTS idx_taxes_duty ON taxes(label_en, type, rate_numeric);
 CREATE INDEX IF NOT EXISTS idx_instructions_tariff ON instructions(tariff_code);
 
 -- FTS for full-text search
@@ -132,6 +153,7 @@ def build_db() -> None:
     raw = json.loads((DATA_DIR / "tariffs.json").read_text())
     print(f"Loading {len(raw)} tariff records …")
 
+    conn.execute("BEGIN")
     for record in raw:
         code = record["Number"]
         chapter = extract_chapter(code)
@@ -145,27 +167,44 @@ def build_db() -> None:
         taxes_raw = record.get("Taxes", [])
         current_agreement = None
         sort_order = 0
+        import_duty_numeric = None
+        vat_numeric = None
 
         for t in taxes_raw:
             parsed = parse_tax_entry(t)
             if parsed is None:
                 continue
 
+            rate_numeric = extract_numeric_rate(parsed["rate"])
+
             if parsed["type"] == "agreement":
                 current_agreement = parsed["label_en"]
                 conn.execute(
-                    "INSERT INTO taxes (tariff_code, type, label_ar, label_en, rate, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-                    (code, "agreement", parsed["label_ar"], parsed["label_en"], None, sort_order),
+                    "INSERT INTO taxes (tariff_code, type, label_ar, label_en, rate, rate_note, rate_numeric, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (code, "agreement", parsed["label_ar"], parsed["label_en"], None, None, None, sort_order),
                 )
             else:
                 label_en = parsed["label_en"]
                 if current_agreement:
                     label_en = f"{parsed['label_en']} ({current_agreement})"
                 conn.execute(
-                    "INSERT INTO taxes (tariff_code, type, label_ar, label_en, rate, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-                    (code, "tax", parsed["label_ar"], label_en, parsed["rate"], sort_order),
+                    "INSERT INTO taxes (tariff_code, type, label_ar, label_en, rate, rate_note, rate_numeric, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (code, "tax", parsed["label_ar"], label_en, parsed["rate"], parsed["rate_note"], rate_numeric, sort_order),
                 )
+                # Track primary rates for tariff-level columns
+                if parsed["label_en"] == "Import Duty" and not current_agreement:
+                    import_duty_numeric = rate_numeric
+                elif parsed["label_en"] == "VAT" and not current_agreement:
+                    vat_numeric = rate_numeric
+
             sort_order += 1
+
+        # Update tariff with pre-computed rates
+        if import_duty_numeric is not None or vat_numeric is not None:
+            conn.execute(
+                "UPDATE tariffs SET import_duty_numeric = ?, vat_numeric = ? WHERE code = ?",
+                (import_duty_numeric, vat_numeric, code),
+            )
 
         # Instructions
         instructions = record.get("Instructions", [])

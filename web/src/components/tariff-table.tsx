@@ -1,4 +1,6 @@
+import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { ClickableBadge } from "@/components/ui/clickable-badge"
 import type { TariffResult } from "@/lib/api"
 import { getIconForChapter, getBadgeClassForChapter, govLink } from "@/lib/chapters"
@@ -6,63 +8,80 @@ import { t, tChapter } from "@/lib/i18n"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowUp01Icon, ArrowDown01Icon, SortingIcon, LinkSquare02Icon,
-  Search01Icon,
+  Search01Icon, Cancel01Icon,
 } from "@hugeicons/core-free-icons"
 
 interface TariffTableProps {
   results: TariffResult[]
   onSelect: (code: string) => void
   onChapterClick: (chapter: string) => void
+  onClearFilters?: () => void
+  hasFilters?: boolean
   sort: string
   order: string
   onSort: (column: string) => void
 }
 
-export function TariffTable({ results, onSelect, onChapterClick, sort, order, onSort }: TariffTableProps) {
+export const TariffTable = memo(function TariffTable({ results, onSelect, onChapterClick, onClearFilters, hasFilters, sort, order, onSort }: TariffTableProps) {
   if (results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
+      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-4">
         <div className="flex items-center justify-center size-12 rounded-2xl bg-muted">
           <HugeiconsIcon icon={Search01Icon} size={24} className="opacity-40" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium">{t("table.noResults")}</p>
+          <p className="text-sm font-bold">{t("table.noResults")}</p>
           <p className="text-xs mt-1 text-muted-foreground/70">{t("table.noResultsHint")}</p>
         </div>
+        {hasFilters && onClearFilters && (
+          <Button variant="outline" size="sm" onClick={onClearFilters}>
+            <HugeiconsIcon icon={Cancel01Icon} size={14} />
+            {t("filter.clearAll")}
+          </Button>
+        )}
       </div>
     )
   }
 
+  const sortProps = (column: string) => {
+    const active = sort === column
+    return { "aria-sort": active ? (order === "asc" ? "ascending" : "descending") as const : ("none" as const) }
+  }
+
   return (
-    <table className="w-full text-sm">
-      <thead className="sticky top-0 z-10 bg-card text-xs font-medium text-muted-foreground shadow-[0_1px_0_0_var(--color-border)]">
+    <table className="w-full text-sm" aria-label={t("nav.tariffSchedule")}>
+      <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground shadow-[0_1px_0_0_var(--color-border)]">
         <tr>
-          <th className="w-[140px] px-4 py-2.5 text-start font-medium">
-            <SortableLabel label={t("table.hsCode")} column="code" sort={sort} order={order} onSort={onSort} />
+          <th className="w-[140px] px-4 py-2.5 text-start" {...sortProps("code")}>
+            <SortButton label={t("table.hsCode")} column="code" sort={sort} order={order} onSort={onSort} />
           </th>
-          <th className="px-3 py-2.5 text-start font-medium">{t("table.description")}</th>
-          <th className="w-[150px] px-3 py-2.5 text-center font-medium hidden lg:table-cell">{t("table.category")}</th>
-          <th className="w-[110px] px-3 py-2.5 text-center font-medium">
-            <SortableLabel label={t("table.importDuty")} column="duty" sort={sort} order={order} onSort={onSort} className="justify-center" />
+          <th className="px-4 py-2.5 text-start">{t("table.description")}</th>
+          <th className="w-[150px] px-4 py-2.5 text-center hidden lg:table-cell">{t("table.category")}</th>
+          <th className="w-[110px] px-4 py-2.5 text-center" {...sortProps("duty")}>
+            <SortButton label={t("table.importDuty")} column="duty" sort={sort} order={order} onSort={onSort} className="justify-center" />
           </th>
-          <th className="w-[80px] px-3 py-2.5 text-center font-medium hidden md:table-cell">{t("table.vat")}</th>
-          <th className="w-[100px] px-3 py-2.5 text-center font-medium hidden sm:table-cell">{t("table.fta")}</th>
+          <th className="w-[80px] px-4 py-2.5 text-center hidden md:table-cell" {...sortProps("vat")}>
+            <SortButton label={t("table.vat")} column="vat" sort={sort} order={order} onSort={onSort} className="justify-center" />
+          </th>
+          <th className="w-[100px] px-4 py-2.5 text-center hidden sm:table-cell">{t("table.fta")}</th>
         </tr>
       </thead>
       <tbody>
         {results.map((r) => (
           <tr
             key={r.code}
-            className="border-b border-border/50 cursor-pointer transition-colors duration-150 hover:bg-muted/50"
+            tabIndex={0}
+            className="border-b border-border/50 cursor-pointer transition-colors duration-150 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
             onClick={() => onSelect(r.code)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(r.code) } }}
           >
-            <td className="px-4 py-2.5 font-mono text-sm font-medium text-primary whitespace-nowrap" dir="ltr">
+            <td className="px-4 py-2.5 font-mono text-sm text-primary whitespace-nowrap" dir="ltr">
               {r.code}
             </td>
-            <td className="px-3 py-2.5 truncate max-w-0">
+            <td className="px-4 py-2.5 truncate max-w-0">
               {r.short_description_ar}
             </td>
-            <td className="px-3 py-2.5 text-center hidden lg:table-cell">
+            <td className="px-4 py-2.5 text-center hidden lg:table-cell">
               <ClickableBadge
                 className={getBadgeClassForChapter(r.chapter)}
                 onClick={(e) => { e.stopPropagation(); onChapterClick(r.chapter) }}
@@ -71,16 +90,16 @@ export function TariffTable({ results, onSelect, onChapterClick, sort, order, on
                 {tChapter(r.chapter)}
               </ClickableBadge>
             </td>
-            <td className="px-3 py-2.5 text-center">
+            <td className="px-4 py-2.5 text-center">
               <DutyDisplay rate={r.import_duty} />
             </td>
-            <td className="px-3 py-2.5 text-center font-mono text-xs text-muted-foreground hidden md:table-cell" dir="ltr">
+            <td className="px-4 py-2.5 text-center font-mono text-xs text-muted-foreground hidden md:table-cell" dir="ltr">
               {r.vat || "—"}
             </td>
-            <td className="px-3 py-2.5 text-center hidden sm:table-cell">
+            <td className="px-4 py-2.5 text-center hidden sm:table-cell">
               <span className="inline-flex items-center gap-1.5">
-                {r.agreements.length > 0 && (
-                  <Badge variant="secondary">{r.agreements.length}</Badge>
+                {r.agreement_count > 0 && (
+                  <Badge variant="secondary">{r.agreement_count}</Badge>
                 )}
                 <a
                   href={govLink(r.code)}
@@ -88,7 +107,7 @@ export function TariffTable({ results, onSelect, onChapterClick, sort, order, on
                   rel="noopener noreferrer"
                   title={t("detail.viewOnGov")}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+                  className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
                   aria-label={t("detail.viewOnGov")}
                 >
                   <HugeiconsIcon icon={LinkSquare02Icon} size={13} />
@@ -100,9 +119,9 @@ export function TariffTable({ results, onSelect, onChapterClick, sort, order, on
       </tbody>
     </table>
   )
-}
+})
 
-function SortableLabel({
+function SortButton({
   label, column, sort, order, onSort, className = "",
 }: {
   label: string; column: string; sort: string; order: string
@@ -110,19 +129,18 @@ function SortableLabel({
 }) {
   const active = sort === column
   return (
-    <span
-      className={`inline-flex items-center gap-1 cursor-pointer select-none transition-colors duration-150 hover:text-foreground ${className}`}
+    <button
+      type="button"
+      className={`inline-flex items-center gap-1 select-none transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:rounded-sm ${active ? "text-foreground" : ""} ${className}`}
       onClick={(e) => { e.stopPropagation(); onSort(column) }}
-      role="button"
-      aria-sort={active ? (order === "asc" ? "ascending" : "descending") : "none"}
     >
       {label}
       <HugeiconsIcon
         icon={active ? (order === "asc" ? ArrowUp01Icon : ArrowDown01Icon) : SortingIcon}
         size={14}
-        className={`transition-opacity duration-150 ${active ? "" : "opacity-30"}`}
+        className={active ? "" : "opacity-30"}
       />
-    </span>
+    </button>
   )
 }
 

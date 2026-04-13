@@ -1,11 +1,10 @@
 import { Badge } from "@/components/ui/badge"
-import { ClickableBadge } from "@/components/ui/clickable-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { TariffDetail } from "@/lib/api"
+import type { Tax, TariffDetail } from "@/lib/api"
 import { getTariff } from "@/lib/api"
 import { getColorForChapter, getIconForChapter, getSectionForChapter, getBadgeClassForChapter, govLink } from "@/lib/chapters"
 import { t, tChapter, tSection, fmtEGP } from "@/lib/i18n"
@@ -31,7 +30,10 @@ export function TariffDetailDialog({ code, onClose }: Props) {
   useEffect(() => {
     if (!code) { setDetail(null); return }
     setLoading(true)
-    getTariff(code).then(setDetail).finally(() => setLoading(false))
+    getTariff(code)
+      .then(setDetail)
+      .catch(() => { setDetail(null) })
+      .finally(() => setLoading(false))
   }, [code])
 
   const mainTaxes = detail?.taxes.filter((t) => t.type === "tax" && t.rate) || []
@@ -61,17 +63,17 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                     <DialogTitle className="text-xl font-bold leading-relaxed">
                       {detail.description_ar}
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                      {t("detail.dialogDescription")} {detail.code}
+                    </DialogDescription>
                     <div className="flex items-center gap-1.5 flex-wrap mt-2">
                       <Badge variant="outline" className="font-mono text-xs" dir="ltr">{detail.code}</Badge>
-                      <ClickableBadge className={getBadgeClassForChapter(detail.chapter)}>
-                        {t("nav.chapter")} {detail.chapter}
-                      </ClickableBadge>
-                      <ClickableBadge className={getBadgeClassForChapter(detail.chapter)}>
-                        {tChapter(detail.chapter)}
-                      </ClickableBadge>
-                      <ClickableBadge className={getBadgeClassForChapter(detail.chapter)}>
+                      <Badge variant="outline" className={getBadgeClassForChapter(detail.chapter)}>
+                        {t("nav.chapter")} {detail.chapter} · {tChapter(detail.chapter)}
+                      </Badge>
+                      <Badge variant="outline" className={getBadgeClassForChapter(detail.chapter)}>
                         {tSection(getSectionForChapter(detail.chapter))}
-                      </ClickableBadge>
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -124,50 +126,21 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                 <Card className="overflow-hidden">
                   <CardContent className="p-0">
                     {/* Bill header */}
-                    <div className="flex items-center bg-muted/60 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="flex items-center bg-muted/60 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       <div className="flex-1">{t("detail.type")}</div>
                       <div className="w-28 text-center">{t("detail.rate")}</div>
-                      <div className="w-36 text-start" dir="ltr">مثال ({fmtEGP(EXAMPLE_BASE)})</div>
+                      <div className="w-36 text-start" dir="ltr">{t("detail.example")} ({fmtEGP(EXAMPLE_BASE)})</div>
                     </div>
 
                     {/* Bill rows */}
-                    <div className="divide-y">
-                      {mainTaxes.map((tx, i) => (
-                        <div key={i} className="flex items-center px-5 py-3.5">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium">{tx.label_ar}</div>
-                            <div className="text-xs text-muted-foreground">{tx.label_en}</div>
-                          </div>
-                          <div className="w-28 text-center">
-                            <Badge variant="outline" className="font-mono" dir="ltr">{tx.rate}</Badge>
-                          </div>
-                          <div className="w-36 text-start font-mono text-sm tabular-nums" dir="ltr">
-                            {computeExample(tx.rate, EXAMPLE_BASE)}
-                          </div>
-                        </div>
-                      ))}
-                      {mainTaxes.length === 0 && (
-                        <div className="px-5 py-6 text-center text-sm text-muted-foreground">—</div>
-                      )}
-                    </div>
-
-                    {/* Bill total */}
-                    {mainTaxes.length > 0 && (
-                      <div className="flex items-center px-5 py-3.5 bg-muted/40 border-t-2 border-primary/20">
-                        <div className="flex-1 text-sm font-bold">الإجمالي التقديري</div>
-                        <div className="w-28" />
-                        <div className="w-36 text-start font-mono text-sm font-bold tabular-nums" dir="ltr">
-                          {computeTotal(mainTaxes, EXAMPLE_BASE)}
-                        </div>
-                      </div>
-                    )}
+                    <BillRows taxes={mainTaxes} base={EXAMPLE_BASE} />
                   </CardContent>
                 </Card>
 
                 {mainTaxes.length > 0 && (
                   <p className="text-[11px] text-muted-foreground mt-2 flex items-start gap-1.5">
                     <HugeiconsIcon icon={InformationCircleIcon} size={13} className="shrink-0 mt-0.5" />
-                    <span>المبالغ تقديرية بناءً على قيمة جمركية {fmtEGP(EXAMPLE_BASE)} — للاستخدام التوضيحي فقط</span>
+                    <span>{t("detail.disclaimer")} {fmtEGP(EXAMPLE_BASE)}</span>
                   </p>
                 )}
               </section>
@@ -175,7 +148,7 @@ export function TariffDetailDialog({ code, onClose }: Props) {
               {/* ─── Trade agreements ─── */}
               {agreements.length > 0 && (
                 <section>
-                  <SectionHeading icon={ShieldKeyIcon} label={t("detail.tradeAgreements")} color="bg-emerald-500" />
+                  <SectionHeading icon={ShieldKeyIcon} label={t("detail.tradeAgreements")} color="bg-teal-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {agreements.map((a, i) => {
                       const idx = detail.taxes.indexOf(a)
@@ -192,12 +165,12 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                             <span className="text-sm">{a.label_ar}</span>
                             <div className="flex gap-1.5">
                               {rates.map((r, j) => (
-                                <Badge key={j} variant="outline" className="font-mono text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800" dir="ltr">
+                                <Badge key={j} variant="outline" className="font-mono text-teal-600 border-teal-300 bg-teal-50 dark:bg-teal-950 dark:text-teal-400 dark:border-teal-800" dir="ltr">
                                   {r.rate}
                                 </Badge>
                               ))}
                               {rates.length === 0 && (
-                                <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
+                                <Badge variant="outline" className="text-teal-600 border-teal-300 bg-teal-50 dark:bg-teal-950 dark:text-teal-400 dark:border-teal-800">
                                   {t("table.free")}
                                 </Badge>
                               )}
@@ -249,7 +222,7 @@ function SectionHeading({ icon, label, color, count }: {
   count?: number
 }) {
   return (
-    <h3 className="flex items-center gap-2.5 text-sm font-semibold mb-3">
+    <h3 className="flex items-center gap-2.5 text-sm font-bold mb-3">
       <span className={`flex items-center justify-center size-6 rounded-md ${color} text-white`}>
         <HugeiconsIcon icon={icon} size={14} />
       </span>
@@ -268,7 +241,7 @@ function StatCard({ icon, label, value, highlight }: {
   return (
     <div className="rounded-xl border bg-card p-3 flex flex-col items-center gap-1">
       <HugeiconsIcon icon={icon} size={16} className="text-muted-foreground" />
-      <div className={`text-xl font-mono font-semibold leading-none ${highlight ? "text-emerald-500" : ""}`} dir="ltr">
+      <div className={`text-xl font-mono font-bold leading-none ${highlight ? "text-emerald-500" : ""}`} dir="ltr">
         {value}
       </div>
       <div className="text-[11px] text-muted-foreground text-center leading-tight mt-0.5">{label}</div>
@@ -276,20 +249,83 @@ function StatCard({ icon, label, value, highlight }: {
   )
 }
 
-function computeExample(rate: string | null, base: number): string {
-  if (!rate) return "—"
-  const match = rate.match(/([\d.]+)/)
-  if (!match) return "—"
-  const amount = Math.round(base * parseFloat(match[1]) / 100)
-  return fmtEGP(amount)
+function BillRows({ taxes, base }: { taxes: Tax[]; base: number }) {
+  if (taxes.length === 0) {
+    return <div className="px-5 py-6 text-center text-sm text-muted-foreground">—</div>
+  }
+
+  const { amounts, total } = computeBill(taxes, base)
+  const notes = [...new Set(taxes.map((tx) => tx.rate_note).filter(Boolean))] as string[]
+
+  return (
+    <>
+      <div className="divide-y">
+        {taxes.map((tx, i) => (
+          <div key={i} className="flex items-center px-5 py-3.5">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold">{tx.label_ar}</div>
+              <div className="text-xs text-muted-foreground">{tx.label_en}</div>
+            </div>
+            <div className="w-28 text-center">
+              <span title={tx.rate_note ?? undefined}>
+                <Badge variant="outline" className="font-mono" dir="ltr">
+                  {tx.rate ?? "—"}
+                  {tx.rate_note && <span className="text-muted-foreground ms-0.5">*</span>}
+                </Badge>
+              </span>
+            </div>
+            <div className="w-36 text-start font-mono text-sm tabular-nums" dir="ltr">
+              {fmtEGP(amounts[i])}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center px-5 py-3.5 bg-muted/40 border-t-2 border-primary/20">
+        <div className="flex-1 text-sm font-bold">{t("detail.estimatedTotal")}</div>
+        <div className="w-28" />
+        <div className="w-36 text-start font-mono text-sm font-bold tabular-nums" dir="ltr">
+          {fmtEGP(total)}
+        </div>
+      </div>
+      {notes.length > 0 && (
+        <div className="px-5 py-2 text-xs text-muted-foreground">
+          {notes.map((note, i) => (
+            <div key={i}>* {note}</div>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 
-function computeTotal(taxes: { rate: string | null }[], base: number): string {
-  let total = 0
+function parseRate(rate: string | null): number | null {
+  if (!rate) return null
+  const match = rate.match(/([\d.]+)/)
+  return match ? parseFloat(match[1]) : null
+}
+
+function computeBill(taxes: Tax[], base: number): { amounts: number[]; total: number } {
+  let dutyTotal = 0
+  const amounts: number[] = []
+
   for (const tx of taxes) {
-    if (!tx.rate) continue
-    const match = tx.rate.match(/([\d.]+)/)
-    if (match) total += Math.round(base * parseFloat(match[1]) / 100)
+    const pct = parseRate(tx.rate)
+    if (pct === null) { amounts.push(0); continue }
+
+    if (tx.rate_note) {
+      // Cascading: apply on (base + accumulated duties)
+      const amount = Math.round((base + dutyTotal) * pct / 100)
+      amounts.push(amount)
+    } else {
+      // Flat: apply on base
+      const amount = Math.round(base * pct / 100)
+      amounts.push(amount)
+      if (tx.label_en.includes("Import Duty") || tx.label_en.includes("Table Tax")) {
+        dutyTotal += amount
+      }
+    }
   }
-  return fmtEGP(total)
+
+  const total = amounts.reduce((s, a) => s + a, 0)
+  return { amounts, total }
 }

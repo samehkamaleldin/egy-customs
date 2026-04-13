@@ -9,6 +9,5 @@ dependencies = [
     "beautifulsoup4>=4.14.3",
     "fastapi>=0.135.3",
     "lxml>=6.0.4",
-    "sqlite-utils>=3.39",
     "uvicorn>=0.44.0",
 ]

@@ -11,4 +11,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "icons": ["@hugeicons/react", "@hugeicons/core-free-icons"],
+        },
+      },
+    },
+  },
 })

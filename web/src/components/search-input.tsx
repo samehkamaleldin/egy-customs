@@ -16,6 +16,10 @@ export function SearchInput({ value, onChange }: SearchInputProps) {
 
   useEffect(() => { setLocal(value) }, [value])
 
+  useEffect(() => {
+    return () => { if (timer.current) clearTimeout(timer.current) }
+  }, [])
+
   const debounced = useCallback(
     (v: string) => {
       if (timer.current) clearTimeout(timer.current)
@@ -41,12 +45,14 @@ export function SearchInput({ value, onChange }: SearchInputProps) {
           if (e.key === "Escape") { setLocal(""); onChange(""); inputRef.current?.blur() }
         }}
         placeholder={t("search.placeholder")}
+        aria-label={t("search.placeholder")}
         className="ps-9 pe-9"
       />
       {local && (
         <button
           onClick={() => { setLocal(""); onChange(""); inputRef.current?.focus() }}
           className="absolute end-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={t("filter.clearSearch")}
         >
           <HugeiconsIcon icon={Cancel01Icon} size={14} />
         </button>

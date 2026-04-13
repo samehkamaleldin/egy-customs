@@ -5,6 +5,7 @@ export interface Tax {
   label_en: string
   label_ar: string
   rate: string | null
+  rate_note: string | null
 }
 
 export interface TariffResult {
@@ -14,8 +15,7 @@ export interface TariffResult {
   short_description_ar: string
   import_duty: string | null
   vat: string | null
-  agreements: string[]
-  taxes: Tax[]
+  agreement_count: number
 }
 
 export interface TariffDetail extends TariffResult {
@@ -41,6 +41,7 @@ export interface Stats {
   tax_entries: number
   instructions: number
   duty_distribution: Record<string, number>
+  last_synced: string
 }
 
 export interface SearchParams {
@@ -53,7 +54,15 @@ export interface SearchParams {
   per_page?: number
 }
 
-export async function searchTariffs(params: SearchParams): Promise<SearchResponse> {
+async function fetchJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(url, { signal })
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function searchTariffs(params: SearchParams, signal?: AbortSignal): Promise<SearchResponse> {
   const sp = new URLSearchParams()
   if (params.q) sp.set("q", params.q)
   if (params.chapter) sp.set("chapter", params.chapter)
@@ -62,21 +71,23 @@ export async function searchTariffs(params: SearchParams): Promise<SearchRespons
   if (params.has_fta) sp.set("has_fta", params.has_fta)
   sp.set("page", String(params.page || 1))
   sp.set("per_page", String(params.per_page || 25))
-  const res = await fetch(`${API_BASE}/api/search?${sp}`)
-  return res.json()
+  return fetchJSON<SearchResponse>(`${API_BASE}/api/search?${sp}`, signal)
 }
 
+const _detailCache = new Map<string, TariffDetail>()
+
 export async function getTariff(code: string): Promise<TariffDetail> {
-  const res = await fetch(`${API_BASE}/api/tariff/${encodeURIComponent(code)}`)
-  return res.json()
+  const cached = _detailCache.get(code)
+  if (cached) return cached
+  const detail = await fetchJSON<TariffDetail>(`${API_BASE}/api/tariff/${encodeURIComponent(code)}`)
+  _detailCache.set(code, detail)
+  return detail
 }
 
 export async function getChapters(): Promise<Chapter[]> {
-  const res = await fetch(`${API_BASE}/api/chapters`)
-  return res.json()
+  return fetchJSON<Chapter[]>(`${API_BASE}/api/chapters`)
 }
 
 export async function getStats(): Promise<Stats> {
-  const res = await fetch(`${API_BASE}/api/stats`)
-  return res.json()
+  return fetchJSON<Stats>(`${API_BASE}/api/stats`)
 }

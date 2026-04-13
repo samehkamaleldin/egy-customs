@@ -13,6 +13,8 @@ data/tariffs.json
 data/tariffs_flat.json
 data/codes.json
 data/summary.json
+data/*.db-wal
+data/*.db-shm
 
 # IDE
 .idea/
