@@ -41,26 +41,27 @@ export function TariffDetailDialog({ code, onClose }: Props) {
 
   return (
     <Dialog open={!!code} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-5xl max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-2xl">
         {loading ? (
-          <div className="p-8 space-y-4">
-            <Skeleton className="h-8 w-64" />
+          <div className="p-6 space-y-4">
+            <Skeleton className="h-8 w-48" />
             <Skeleton className="h-5 w-full" />
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              <Skeleton className="h-40" /><Skeleton className="h-40" /><Skeleton className="h-40" />
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <Skeleton className="h-24" /><Skeleton className="h-24" />
             </div>
           </div>
         ) : detail ? (
           <>
-            {/* ─── Hero ─── */}
-            <div className="p-6 pb-0">
+            {/* Hero */}
+            <div className="p-4 sm:p-6 pb-0">
               <DialogHeader>
-                <div className="flex items-start gap-4">
-                  <div className={`flex items-center justify-center size-14 rounded-2xl shrink-0 ${getColorForChapter(detail.chapter)} text-white`}>
-                    <HugeiconsIcon icon={getIconForChapter(detail.chapter)} size={28} />
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className={`flex items-center justify-center size-10 sm:size-14 rounded-xl sm:rounded-2xl shrink-0 ${getColorForChapter(detail.chapter)} text-white`}>
+                    <HugeiconsIcon icon={getIconForChapter(detail.chapter)} size={20} className="sm:hidden" />
+                    <HugeiconsIcon icon={getIconForChapter(detail.chapter)} size={28} className="hidden sm:block" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <DialogTitle className="text-xl font-bold leading-relaxed">
+                    <DialogTitle className="text-base sm:text-xl font-bold leading-relaxed">
                       {detail.description_ar}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
@@ -71,7 +72,7 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                       <Badge variant="outline" className={getBadgeClassForChapter(detail.chapter)}>
                         {t("nav.chapter")} {detail.chapter} · {tChapter(detail.chapter)}
                       </Badge>
-                      <Badge variant="outline" className={getBadgeClassForChapter(detail.chapter)}>
+                      <Badge variant="outline" className={`hidden sm:inline-flex ${getBadgeClassForChapter(detail.chapter)}`}>
                         {tSection(getSectionForChapter(detail.chapter))}
                       </Badge>
                     </div>
@@ -80,9 +81,9 @@ export function TariffDetailDialog({ code, onClose }: Props) {
               </DialogHeader>
             </div>
 
-            {/* ─── Quick stats ─── */}
-            <div className="px-6 pt-4 pb-2">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Quick stats */}
+            <div className="px-4 sm:px-6 pt-4 pb-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <StatCard
                   icon={PercentIcon}
                   label={t("table.importDuty")}
@@ -107,7 +108,7 @@ export function TariffDetailDialog({ code, onClose }: Props) {
               </div>
             </div>
 
-            <div className="px-6 py-2">
+            <div className="px-4 sm:px-6 py-2">
               <Button variant="outline" size="sm" asChild>
                 <a href={govLink(detail.code)} target="_blank" rel="noopener noreferrer">
                   <HugeiconsIcon icon={LinkSquare02Icon} size={14} />
@@ -116,23 +117,22 @@ export function TariffDetailDialog({ code, onClose }: Props) {
               </Button>
             </div>
 
-            <Separator className="mx-6" />
+            <Separator className="mx-4 sm:mx-6" />
 
-            {/* ─── Bill ─── */}
-            <div className="p-6 space-y-6">
+            {/* Bill */}
+            <div className="p-4 sm:p-6 space-y-6">
               <section>
                 <SectionHeading icon={Invoice03Icon} label={t("detail.dutiesTaxes")} color="bg-primary" />
 
                 <Card className="overflow-hidden">
                   <CardContent className="p-0">
                     {/* Bill header */}
-                    <div className="flex items-center bg-muted/60 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <div className="flex items-center bg-muted/60 px-3 sm:px-5 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                       <div className="flex-1">{t("detail.type")}</div>
-                      <div className="w-28 text-center">{t("detail.rate")}</div>
-                      <div className="w-36 text-start" dir="ltr">{t("detail.example")} ({fmtEGP(EXAMPLE_BASE)})</div>
+                      <div className="w-16 sm:w-28 text-center">{t("detail.rate")}</div>
+                      <div className="w-20 sm:w-36 text-start hidden sm:block" dir="ltr">{t("detail.example")}</div>
                     </div>
 
-                    {/* Bill rows */}
                     <BillRows taxes={mainTaxes} base={EXAMPLE_BASE} />
                   </CardContent>
                 </Card>
@@ -145,7 +145,7 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                 )}
               </section>
 
-              {/* ─── Trade agreements ─── */}
+              {/* Trade agreements */}
               {agreements.length > 0 && (
                 <section>
                   <SectionHeading icon={ShieldKeyIcon} label={t("detail.tradeAgreements")} color="bg-teal-500" />
@@ -161,9 +161,9 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                       }
                       return (
                         <Card key={i}>
-                          <CardContent className="flex items-center justify-between p-3.5">
-                            <span className="text-sm">{a.label_ar}</span>
-                            <div className="flex gap-1.5">
+                          <CardContent className="flex items-center justify-between p-3">
+                            <span className="text-sm truncate me-2">{a.label_ar}</span>
+                            <div className="flex gap-1.5 shrink-0">
                               {rates.map((r, j) => (
                                 <Badge key={j} variant="outline" className="font-mono text-teal-600 border-teal-300 bg-teal-50 dark:bg-teal-950 dark:text-teal-400 dark:border-teal-800" dir="ltr">
                                   {r.rate}
@@ -183,14 +183,14 @@ export function TariffDetailDialog({ code, onClose }: Props) {
                 </section>
               )}
 
-              {/* ─── Regulations ─── */}
+              {/* Regulations */}
               {detail.instructions.length > 0 && (
                 <section>
                   <SectionHeading icon={Alert02Icon} label={t("detail.regulations")} color="bg-amber-500" count={detail.instructions.length} />
                   <Card className="overflow-hidden">
                     <CardContent className="p-0 divide-y">
                       {detail.instructions.map((inst, i) => (
-                        <div key={i} className="flex gap-3 px-5 py-3.5">
+                        <div key={i} className="flex gap-3 px-3 sm:px-5 py-3">
                           {inst.code && (
                             <Badge variant="outline" className="shrink-0 h-fit font-mono text-[11px] mt-0.5" dir="ltr">
                               {inst.code}
@@ -213,7 +213,7 @@ export function TariffDetailDialog({ code, onClose }: Props) {
   )
 }
 
-/* ── Helpers ── */
+/* Helpers */
 
 function SectionHeading({ icon, label, color, count }: {
   icon: Parameters<typeof HugeiconsIcon>[0]["icon"]
@@ -239,19 +239,19 @@ function StatCard({ icon, label, value, highlight }: {
   highlight?: boolean
 }) {
   return (
-    <div className="rounded-xl border bg-card p-3 flex flex-col items-center gap-1">
-      <HugeiconsIcon icon={icon} size={16} className="text-muted-foreground" />
-      <div className={`text-xl font-mono font-bold leading-none ${highlight ? "text-emerald-500" : ""}`} dir="ltr">
+    <div className="rounded-xl border bg-card p-2 sm:p-3 flex flex-col items-center gap-1">
+      <HugeiconsIcon icon={icon} size={14} className="text-muted-foreground" />
+      <div className={`text-lg sm:text-xl font-mono font-bold leading-none ${highlight ? "text-emerald-500" : ""}`} dir="ltr">
         {value}
       </div>
-      <div className="text-[11px] text-muted-foreground text-center leading-tight mt-0.5">{label}</div>
+      <div className="text-[10px] sm:text-[11px] text-muted-foreground text-center leading-tight">{label}</div>
     </div>
   )
 }
 
 function BillRows({ taxes, base }: { taxes: Tax[]; base: number }) {
   if (taxes.length === 0) {
-    return <div className="px-5 py-6 text-center text-sm text-muted-foreground">—</div>
+    return <div className="px-3 sm:px-5 py-6 text-center text-sm text-muted-foreground">—</div>
   }
 
   const { amounts, total } = computeBill(taxes, base)
@@ -261,34 +261,34 @@ function BillRows({ taxes, base }: { taxes: Tax[]; base: number }) {
     <>
       <div className="divide-y">
         {taxes.map((tx, i) => (
-          <div key={i} className="flex items-center px-5 py-3.5">
+          <div key={i} className="flex items-center px-3 sm:px-5 py-3">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold">{tx.label_ar}</div>
-              <div className="text-xs text-muted-foreground">{tx.label_en}</div>
+              <div className="text-sm font-bold truncate">{tx.label_ar}</div>
+              <div className="text-xs text-muted-foreground truncate">{tx.label_en}</div>
             </div>
-            <div className="w-28 text-center">
+            <div className="w-16 sm:w-28 text-center shrink-0">
               <span title={tx.rate_note ?? undefined}>
-                <Badge variant="outline" className="font-mono" dir="ltr">
+                <Badge variant="outline" className="font-mono text-xs" dir="ltr">
                   {tx.rate ?? "—"}
                   {tx.rate_note && <span className="text-muted-foreground ms-0.5">*</span>}
                 </Badge>
               </span>
             </div>
-            <div className="w-36 text-start font-mono text-sm tabular-nums" dir="ltr">
+            <div className="w-20 sm:w-36 text-start font-mono text-xs sm:text-sm tabular-nums shrink-0 hidden sm:block" dir="ltr">
               {fmtEGP(amounts[i])}
             </div>
           </div>
         ))}
       </div>
-      <div className="flex items-center px-5 py-3.5 bg-muted/40 border-t-2 border-primary/20">
+      <div className="flex items-center px-3 sm:px-5 py-3 bg-muted/40 border-t-2 border-primary/20">
         <div className="flex-1 text-sm font-bold">{t("detail.estimatedTotal")}</div>
-        <div className="w-28" />
-        <div className="w-36 text-start font-mono text-sm font-bold tabular-nums" dir="ltr">
+        <div className="w-16 sm:w-28 shrink-0" />
+        <div className="w-20 sm:w-36 text-start font-mono text-sm font-bold tabular-nums shrink-0 hidden sm:block" dir="ltr">
           {fmtEGP(total)}
         </div>
       </div>
       {notes.length > 0 && (
-        <div className="px-5 py-2 text-xs text-muted-foreground">
+        <div className="px-3 sm:px-5 py-2 text-xs text-muted-foreground">
           {notes.map((note, i) => (
             <div key={i}>* {note}</div>
           ))}
@@ -313,11 +313,9 @@ function computeBill(taxes: Tax[], base: number): { amounts: number[]; total: nu
     if (pct === null) { amounts.push(0); continue }
 
     if (tx.rate_note) {
-      // Cascading: apply on (base + accumulated duties)
       const amount = Math.round((base + dutyTotal) * pct / 100)
       amounts.push(amount)
     } else {
-      // Flat: apply on base
       const amount = Math.round(base * pct / 100)
       amounts.push(amount)
       if (tx.label_en.includes("Import Duty") || tx.label_en.includes("Table Tax")) {
