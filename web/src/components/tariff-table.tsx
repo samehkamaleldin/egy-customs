@@ -52,7 +52,7 @@ export const TariffTable = memo(function TariffTable({ results, onSelect, onChap
     <table className="w-full text-sm" aria-label={t("nav.tariffSchedule")}>
       <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground shadow-[0_1px_0_0_var(--color-border)]">
         <tr>
-          <th className="w-[140px] px-4 py-2.5 text-start" {...sortProps("code")}>
+          <th className="w-[140px] px-4 py-2.5 text-start hidden md:table-cell" {...sortProps("code")}>
             <SortButton label={t("table.hsCode")} column="code" sort={sort} order={order} onSort={onSort} />
           </th>
           <th className="px-4 py-2.5 text-start">{t("table.description")}</th>
@@ -60,10 +60,10 @@ export const TariffTable = memo(function TariffTable({ results, onSelect, onChap
           <th className="w-[110px] px-4 py-2.5 text-center" {...sortProps("duty")}>
             <SortButton label={t("table.importDuty")} column="duty" sort={sort} order={order} onSort={onSort} className="justify-center" />
           </th>
-          <th className="w-[80px] px-4 py-2.5 text-center hidden md:table-cell" {...sortProps("vat")}>
+          <th className="w-[80px] px-4 py-2.5 text-center" {...sortProps("vat")}>
             <SortButton label={t("table.vat")} column="vat" sort={sort} order={order} onSort={onSort} className="justify-center" />
           </th>
-          <th className="w-[100px] px-4 py-2.5 text-center hidden sm:table-cell">{t("table.fta")}</th>
+          <th className="w-[100px] px-4 py-2.5 text-center hidden md:table-cell">{t("table.fta")}</th>
         </tr>
       </thead>
       <tbody>
@@ -75,11 +75,11 @@ export const TariffTable = memo(function TariffTable({ results, onSelect, onChap
             onClick={() => onSelect(r.code)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(r.code) } }}
           >
-            <td className="px-4 py-2.5 font-mono text-sm text-primary whitespace-nowrap" dir="ltr">
+            <td className="px-4 py-2.5 font-mono text-sm text-primary whitespace-nowrap hidden md:table-cell" dir="ltr">
               {r.code}
             </td>
             <td className="px-4 py-2.5 truncate max-w-0">
-              {r.short_description_ar}
+              <span className="line-clamp-1">{r.short_description_ar}</span>
             </td>
             <td className="px-4 py-2.5 text-center hidden lg:table-cell">
               <ClickableBadge
@@ -93,10 +93,10 @@ export const TariffTable = memo(function TariffTable({ results, onSelect, onChap
             <td className="px-4 py-2.5 text-center">
               <DutyDisplay rate={r.import_duty} />
             </td>
-            <td className="px-4 py-2.5 text-center font-mono text-xs text-muted-foreground hidden md:table-cell" dir="ltr">
+            <td className="px-4 py-2.5 text-center font-mono text-xs text-muted-foreground" dir="ltr">
               {r.vat || "—"}
             </td>
-            <td className="px-4 py-2.5 text-center hidden sm:table-cell">
+            <td className="px-4 py-2.5 text-center hidden md:table-cell">
               <span className="inline-flex items-center gap-1.5">
                 {r.agreement_count > 0 && (
                   <Badge variant="secondary">{r.agreement_count}</Badge>

@@ -17,11 +17,13 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import type { Chapter, SearchResponse, Stats } from "@/lib/api"
 import { getChapters, getStats, searchTariffs } from "@/lib/api"
 import { getSectionNameForChapters } from "@/lib/chapters"
+import { useTheme } from "@/components/theme-provider"
 import { t, tChapter, tSection, fmt, fmtDateAr } from "@/lib/i18n"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Cancel01Icon, FilterIcon, ArrowLeft01Icon, ArrowRight01Icon, Loading03Icon,
   DatabaseIcon, Notebook01Icon, Invoice03Icon, Alert02Icon, AlertDiamondIcon,
+  Sun01Icon, Moon01Icon, ComputerIcon,
 } from "@hugeicons/core-free-icons"
 
 export default function App() {
@@ -181,6 +183,7 @@ export default function App() {
               <HugeiconsIcon icon={AlertDiamondIcon} size={14} className="shrink-0" />
               <span>{t("disclaimer.header")}</span>
             </div>
+            <ThemeToggle />
           </div>
         </header>
 
@@ -366,6 +369,26 @@ function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }
         <HugeiconsIcon icon={Cancel01Icon} size={12} />
       </button>
     </Badge>
+  )
+}
+
+const THEME_CYCLE = ["system", "light", "dark"] as const
+const THEME_ICONS = { system: ComputerIcon, light: Sun01Icon, dark: Moon01Icon }
+const THEME_LABELS = { system: "تلقائي", light: "فاتح", dark: "داكن" }
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme as typeof THEME_CYCLE[number]) + 1) % 3]
+
+  return (
+    <button
+      onClick={() => setTheme(next)}
+      className="flex items-center justify-center size-8 rounded-lg border bg-card text-muted-foreground transition-colors duration-150 hover:text-foreground hover:bg-accent"
+      aria-label={THEME_LABELS[theme as keyof typeof THEME_LABELS] ?? THEME_LABELS.system}
+      title={THEME_LABELS[theme as keyof typeof THEME_LABELS] ?? THEME_LABELS.system}
+    >
+      <HugeiconsIcon icon={THEME_ICONS[theme as keyof typeof THEME_ICONS] ?? ComputerIcon} size={14} />
+    </button>
   )
 }
 
