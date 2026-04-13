@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Data (large files — regenerate with `uv run python main.py && uv run python etl.py`)
+data/tariffs.json
+data/tariffs_flat.json
+data/codes.json
+data/summary.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Env
+.env
+.env.local
