@@ -232,5 +232,56 @@ def build_db() -> None:
     conn.close()
 
 
+def export_json() -> None:
+    """Export the SQLite database to a compact JSON file for the static frontend."""
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    tariffs = conn.execute(
+        "SELECT code, chapter, description_ar, short_description_ar, import_duty_numeric, vat_numeric FROM tariffs ORDER BY code"
+    ).fetchall()
+
+    taxes = conn.execute(
+        "SELECT tariff_code, type, label_en, label_ar, rate, rate_note FROM taxes ORDER BY tariff_code, sort_order"
+    ).fetchall()
+
+    instructions = conn.execute(
+        "SELECT tariff_code, code, text_ar FROM instructions ORDER BY tariff_code, sort_order"
+    ).fetchall()
+
+    taxes_by_code: dict[str, list] = {}
+    for t in taxes:
+        taxes_by_code.setdefault(t["tariff_code"], []).append({
+            "t": t["type"], "le": t["label_en"], "la": t["label_ar"],
+            "r": t["rate"], "rn": t["rate_note"],
+        })
+
+    instr_by_code: dict[str, list] = {}
+    for i in instructions:
+        instr_by_code.setdefault(i["tariff_code"], []).append({
+            "c": i["code"], "t": i["text_ar"],
+        })
+
+    data = []
+    for row in tariffs:
+        code = row["code"]
+        data.append({
+            "c": code, "ch": row["chapter"],
+            "d": row["description_ar"], "s": row["short_description_ar"],
+            "dn": row["import_duty_numeric"], "vn": row["vat_numeric"],
+            "tx": taxes_by_code.get(code, []),
+            "ix": instr_by_code.get(code, []),
+        })
+
+    out_path = Path("web/public/data.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+    print(f"Exported {len(data)} tariffs to {out_path} ({out_path.stat().st_size / 1024 / 1024:.1f} MB)")
+
+    conn.close()
+
+
 if __name__ == "__main__":
     build_db()
+    export_json()
